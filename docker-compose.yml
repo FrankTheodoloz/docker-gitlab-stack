@@ -1,0 +1,72 @@
+version: '3.6'
+services:
+  web:
+    image: gitlab/gitlab-ce:16.9.0-ce.0
+    container_name: gitlab
+    restart: unless-stopped
+    deploy:
+      mode: replicated  # replicated|global (1 per node)
+      replicas: 1  # with replicated mode only
+      placement:
+        constraints:
+          - node.role == manager  # manager|worker
+      restart_policy:
+        condition: on-failure  # none, on-failure or [any]
+        delay: 6h  # ns|us|ms|s|m|h [0s]
+        max_attempts: 2  # unlimited if not provided
+        window: 5m
+    environment:
+      GITLAB_OMNIBUS_CONFIG: "from_file('/omnibus_config.rb')"
+    ports:
+      - 8422:22
+      - 8480:80
+      - 8443:443
+    secrets:
+      - GITLAB_ROOT_PWD
+    configs:
+      - source: GITLAB_OMNIBUS_CONFIG
+        target: /omnibus_config.rb
+    volumes:
+      - type: volume
+        source: config
+        target: /etc/gitlab
+        volume: 
+          nocopy: true
+      - type: volume
+        source: logs
+        target: /var/log/gitlab
+        volume: 
+          nocopy: true
+      - type: volume
+        source: data
+        target: /var/opt/gitlab
+        volume: 
+          nocopy: true
+    shm_size: '256m'
+    networks:
+      - gitlab
+networks:
+  gitlab:
+    name: gitlab-network
+secrets:
+  GITLAB_ROOT_PWD:
+    external: true
+configs:
+  GITLAB_OMNIBUS_CONFIG:
+    external: true
+volumes:
+  data:
+    driver_opts:
+      type: nfs
+      o: addr=nas.home,nolock,rw,soft,nfsvers=4
+      device: :/export/docker-volumes/gitlab_data
+  logs:
+    driver_opts:
+      type: nfs
+      o: addr=nas.home,nolock,rw,soft,nfsvers=4
+      device: :/export/docker-volumes/gitlab_logs
+  config:
+    driver_opts:
+      type: nfs
+      o: addr=nas.home,nolock,rw,soft,nfsvers=4
+      device: :/export/docker-volumes/gitlab_config
