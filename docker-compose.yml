@@ -18,9 +18,9 @@ services:
     environment:
       GITLAB_OMNIBUS_CONFIG: "from_file('/omnibus_config.rb')"
     ports:
-      - 8422:22
-      - 8480:80
-      - 8443:443
+      - ${SSH_PORT}:22
+      - ${HTTP_PORT}:80
+      - ${HTTPS_PORT}:443
     secrets:
       - GITLAB_ROOT_PWD
     configs:
